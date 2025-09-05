@@ -1,0 +1,74 @@
+steps:
+  # 1) Build backend (Laravel)
+  - name: backend-deps
+    image: composer:2
+    environment:
+      COMPOSER_ALLOW_SUPERUSER: "1"
+    commands:
+      - composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
+
+  # 2) Build frontend (React) in front/
+  - name: frontend-build
+    image: node:20
+    commands:
+      - cd front
+      - npm install
+      - npm run build:ssr
+
+  # 3) Deploy over FTP to Hostinger (Laravel + React build)
+  - name: deploy
+    image: alpine:3.20
+    environment:
+      FTP_HOST:
+        from_secret: ftp_host
+      FTP_USER:
+        from_secret: ftp_pass
+      FTP_PASS:
+        from_secret: ftp_user
+      FTP_CREDS:
+        from_secret: ftp_creds
+      APP_ENV_CONTENTS:
+        from_secret: app_env_contents
+      # where to upload on Hostinger (adjust if you use subdomains)
+      API_PATH: "public_html"       # Laravel project root on Hostinger (with .htaccess rewrite to /public)
+    commands:
+      - apk add --no-cache lftp bash zip
+      - echo "Starting deployment to $${FTP_HOST}..."
+
+      # (A) Write production .env from secret (optional but recommended)
+      # Provide this secret in Woodpecker with the full contents of your production .env
+      - |
+        if [ -n "$$APP_ENV_CONTENTS" ]; then
+          printf "%s" "$$APP_ENV_CONTENTS" > .env
+        fi
+
+      # (B) Optional: ensure Hostinger rewrite rule exists (Laravel in public_html with /public)
+      - |
+        cat > .htaccess <<'HT'
+        <IfModule mod_rewrite.c>
+          RewriteEngine On
+          RewriteRule ^(.*)$ public/$1 [L]
+        </IfModule>
+        HT
+
+      # (C) Upload Laravel app (mirror with exclusions to keep it lean)
+      - |
+        lftp -e "
+          set ssl:verify-certificate no;
+          open -u $${FTP_CREDS};
+          mirror --reverse --verbose \
+                 --delete \
+                 --exclude-glob .git* \
+                 --exclude-glob node_modules/ \
+                 --exclude-glob front/ \
+                 --exclude-glob tests/ \
+                 --exclude-glob .woodpecker* \
+                 --exclude-glob docker* \
+                 --exclude-glob *.md \
+                 --exclude-glob .*ignore \
+                 ./ ${API_PATH};
+          bye
+        "
+
+      # (E) Permissions (best-effort; Hostinger typically manages these)
+      - echo "Deploy complete."
