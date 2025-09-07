@@ -11,7 +11,6 @@ steps:
   - name: frontend-build
     image: node:20
     commands:
-      - cd front
       - npm install
       - npm run build:ssr
 
@@ -32,8 +31,7 @@ steps:
       # where to upload on Hostinger (adjust if you use subdomains)
       API_PATH: "public_html"       # Laravel project root on Hostinger (with .htaccess rewrite to /public)
     commands:
-      - apk add --no-cache lftp bash zip
-      - echo "Starting deployment to $${FTP_HOST}..."
+      - apk add --no-cache lftp bash
 
       # (A) Write production .env from secret (optional but recommended)
       # Provide this secret in Woodpecker with the full contents of your production .env
@@ -41,15 +39,6 @@ steps:
         if [ -n "$$APP_ENV_CONTENTS" ]; then
           printf "%s" "$$APP_ENV_CONTENTS" > .env
         fi
-
-      # (B) Optional: ensure Hostinger rewrite rule exists (Laravel in public_html with /public)
-      - |
-        cat > .htaccess <<'HT'
-        <IfModule mod_rewrite.c>
-          RewriteEngine On
-          RewriteRule ^(.*)$ public/$1 [L]
-        </IfModule>
-        HT
 
       # (C) Upload Laravel app (mirror with exclusions to keep it lean)
       - |
