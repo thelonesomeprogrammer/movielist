@@ -1,7 +1,12 @@
 steps:
   - name: build
-    image: lorisleiva/laravel-docker:8.2
+    image: bitnami/laravel:12.3.1
     commands:
+      # Minimal .env so Artisan works
+      - echo "APP_KEY=base64:$(openssl rand -base64 32)" > .env
+      - echo "APP_ENV=production" >> .env
+      - echo "DB_CONNECTION=sqlite" >> .env
+      - echo "DB_DATABASE=:memory:" >> .env
       # Backend
       - composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
       # Frontend
@@ -19,7 +24,7 @@ steps:
       # where to upload on Hostinger (adjust if you use subdomains)
       API_PATH: "public_html"       # Laravel project root on Hostinger (with .htaccess rewrite to /public)
     commands:
-      - apk add --no-cache lftp bash
+      - apk add --no-cache lftp bash zip
 
       # (A) Write production .env from secret (optional but recommended)
       # Provide this secret in Woodpecker with the full contents of your production .env
