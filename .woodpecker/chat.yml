@@ -18,12 +18,6 @@ steps:
   - name: deploy
     image: alpine:3.20
     environment:
-      FTP_HOST:
-        from_secret: ftp_host
-      FTP_USER:
-        from_secret: ftp_pass
-      FTP_PASS:
-        from_secret: ftp_user
       FTP_CREDS:
         from_secret: ftp_creds
       APP_ENV_CONTENTS:
