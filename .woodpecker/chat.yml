@@ -11,7 +11,7 @@ steps:
       - composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
       # Frontend
       - npm install
-      - npm run build:ssr
+      - npm run build
 
   # 3) Deploy over FTP to Hostinger (Laravel + React build)
   - name: deploy
