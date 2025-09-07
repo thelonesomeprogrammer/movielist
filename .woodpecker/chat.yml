@@ -1,12 +1,12 @@
 steps:
-- name: build
-  image: lorisleiva/laravel-docker:8.2
-  commands:
-    # Backend
-    - composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
-    # Frontend
-    - npm install
-    - npm run build:ssr
+  - name: build
+    image: lorisleiva/laravel-docker:8.2
+    commands:
+      # Backend
+      - composer install --no-dev --prefer-dist --no-progress --no-interaction --optimize-autoloader
+      # Frontend
+      - npm install
+      - npm run build:ssr
 
   # 3) Deploy over FTP to Hostinger (Laravel + React build)
   - name: deploy
